@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>АСУ ТО — Калькулятор загрузки (оптимизированный)</title>
+    <style>
+        /* --- БЫСТРЫЙ СТАРТ: минимальные стили для быстрой загрузки --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: #f0f4f8;
+            color: #1a2332;
+            padding: 16px;
+        }
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
+        /* --- ХЕДЕР --- */
+        .header {
+            background: linear-gradient(135deg, #0b1a2e, #1a365d);
+            color: #fff;
+            padding: 16px 24px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .header h1 {
+            font-size: 20px;
+            font-weight: 700;
+        }
+        .header h1 small {
+            font-weight: 400;
+            font-size: 12px;
+            opacity: 0.7;
+            display: block;
+        }
+        .header-stats {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .header-stats .stat {
+            text-align: center;
+        }
+        .header-stats .stat .num {
+            font-size: 20px;
+            font-weight: 700;
+            color: #7dd3fc;
+        }
+        .header-stats .stat .label {
+            font-size: 10px;
+            opacity: 0.7;
+            text-transform: uppercase;
+        }
+
+        /* --- УПРАВЛЕНИЕ СУДАМИ --- */
+        .ships-control {
+            background: #f1f5f9;
+            border-radius: 12px;
+            padding: 12px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 14px;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        .ships-control label {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .ships-control .btn-circle {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: none;
+            background: #1a365d;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .ships-control .btn-circle:disabled {
+            opacity: 0.3;
+        }
+        .ships-control .value-display {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1a365d;
+            min-width: 40px;
+            text-align: center;
+        }
+        .ships-note {
+            font-size: 13px;
+            color: #475569;
+        }
+
+        /* --- КАРТОЧКИ СТАТИСТИКИ --- */
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+        .stat-card {
+            background: #fff;
+            padding: 14px 18px;
+            border-radius: 10px;
+            border-left: 4px solid #3b82f6;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        }
+        .stat-card .num {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0b1a2e;
+        }
+        .stat-card .lbl {
+            font-size: 12px;
+            color: #64748b;
+        }
+        .stat-card .range {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            margin-top: 2px;
+        }
+        .stat-card .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+        .stat-card .progress-bar .fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.2s;
+        }
+        .stat-card.green {
+            border-left-color: #16a34a;
+        }
+        .stat-card.red {
+            border-left-color: #dc2626;
+        }
+        .stat-card.orange {
+            border-left-color: #eab308;
+        }
+        .stat-card.blue {
+            border-left-color: #3b82f6;
+        }
+        .stat-card.purple {
+            border-left-color: #8b5cf6;
+        }
+        .fill-green {
+            background: #16a34a;
+        }
+        .fill-yellow {
+            background: #eab308;
+        }
+        .fill-red {
+            background: #dc2626;
+        }
+        .fill-blue {
+            background: #3b82f6;
+        }
+        .fill-purple {
+            background: #8b5cf6;
+        }
+
+        /* --- ТАБЛИЦЫ --- */
+        .table-wrap {
+            overflow-x: auto;
+            margin-top: 12px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        th {
+            background: #f1f5f9;
+            font-weight: 600;
+            padding: 8px 10px;
+            text-align: left;
+            border-bottom: 2px solid #e2e8f0;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+        td {
+            padding: 6px 10px;
+            border-bottom: 1px solid #eef2f6;
+        }
+        .badge {
+            display: inline-block;
+            padding: 1px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .badge-green {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .badge-yellow {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+        .badge-red {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .badge-gray {
+            background: #f1f5f9;
+            color: #475569;
+        }
+        .text-muted {
+            color: #94a3b8;
+            font-size: 11px;
+        }
+        .mt-12 {
+            margin-top: 12px;
+        }
+        .mb-12 {
+            margin-bottom: 12px;
+        }
+
+        /* --- ВКЛАДКИ (ленивая загрузка) --- */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .tabs button {
+            background: transparent;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.15s;
+            flex: 1 1 auto;
+            min-width: 80px;
+        }
+        .tabs button:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        .tabs button.active {
+            background: #fff;
+            color: #0b1a2e;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        /* --- ПАНЕЛЬ ИСТОЧНИКОВ (свёрнута по умолчанию) --- */
+        .source-panel {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 12px 16px;
+            border: 1px solid #e2e8f0;
+            display: none;
+            margin-top: 10px;
+        }
+        .source-panel.open {
+            display: block;
+        }
+        .source-toggle {
+            cursor: pointer;
+            color: #3b82f6;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        /* --- АДАПТИВ --- */
+        @media (max-width: 768px) {
+            .grid-3,
+            .grid-4 {
+                grid-template-columns: 1fr 1fr;
+            }
+            .header {
+                flex-direction: column;
+                text-align: center;
+            }
+            .header-stats {
+                justify-content: center;
+            }
+        }
+        @media (max-width: 480px) {
+            .grid-3,
+            .grid-4 {
+                grid-template-columns: 1fr;
+            }
+            .tabs button {
+                font-size: 11px;
+                padding: 6px 10px;
+                min-width: 50px;
+            }
+        }
+
+        /* --- СПЕЦИАЛЬНОСТИ --- */
+        .specialty-tag {
+            display: inline-block;
+            padding: 1px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .specialty-mechanic {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .specialty-electric {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .specialty-service {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+        .specialty-diver {
+            background: #cffafe;
+            color: #0e7490;
+        }
+        .specialty-crew {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .specialty-other {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        /* --- ЗАГРУЗОЧНЫЙ ИНДИКАТОР --- */
+        .loading-placeholder {
+            text-align: center;
+            padding: 30px;
+            color: #94a3b8;
+        }
+        .loading-placeholder .spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid #e2e8f0;
+            border-top-color: #1a365d;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .success-box {
+            background: #dcfce7;
+            border: 1px solid #16a34a;
+            border-radius: 10px;
+            padding: 10px 16px;
+            font-size: 13px;
+            color: #166534;
+        }
+        .warning-box {
+            background: #fef9c3;
+            border: 1px solid #eab308;
+            border-radius: 10px;
+            padding: 10px 16px;
+            font-size: 13px;
+            color: #854d0e;
+        }
+        .danger-box {
+            background: #fee2e2;
+            border: 1px solid #dc2626;
+            border-radius: 10px;
+            padding: 10px 16px;
+            font-size: 13px;
+            color: #991b1b;
+        }
+
+        .scroll-table {
+            max-height: 400px;
+            overflow-y: auto;
+            border-radius: 8px;
+            border: 1px solid #eef2f6;
+        }
+        .scroll-table table thead {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+        .btn {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            background: #1a365d;
+            color: #fff;
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid #cbd5e1;
+            color: #334155;
+        }
+        .btn-outline:hover {
+            background: #f1f5f9;
+        }
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 11px;
+        }
+        .flex {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        select {
+            padding: 6px 12px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 12px;
+            background: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="app">
+
+        <!-- ===== ХЕДЕР ===== -->
+        <header class="header">
+            <div>
+                <h1>⚓ АСУ ТО <small>Калькулятор загрузки персонала</small></h1>
+            </div>
+            <div class="header-stats" id="headerStats">
+                <div class="stat"><div class="num" id="totalTasks">—</div><div class="label">Работ</div></div>
+                <div class="stat"><div class="num" id="totalHours">—</div><div class="label">Нормо-часов</div></div>
+                <div class="stat"><div class="num" id="avgLoad">—</div><div class="label">Загрузка</div></div>
+            </div>
+        </header>
+
+        <!-- ===== УПРАВЛЕНИЕ СУДАМИ ===== -->
+        <div class="ships-control">
+            <label>🚢 Судов:</label>
+            <button class="btn-circle" onclick="changeShips(-1)" id="shipsDecBtn">−</button>
+            <span class="value-display" id="shipsCountDisplay">1</span>
+            <button class="btn-circle" onclick="changeShips(1)" id="shipsIncBtn">+</button>
+            <span class="ships-note" id="shipsInfo">День: 2 чел. • Ночь: 5 чел. × 2 смены</span>
+        </div>
+
+        <!-- ===== ВКЛАДКИ ===== -->
+        <div class="tabs" id="tabs">
+            <button class="active" data-tab="tab-overview">📊 Обзор</button>
+            <button data-tab="tab-periods">📅 Периоды</button>
+            <button data-tab="tab-systems">🔧 Системы</button>
+            <button data-tab="tab-detail">📋 Детально</button>
+            <button data-tab="tab-sources">📖 Источники</button>
+        </div>
+
+        <!-- ===== ОБЗОР ===== -->
+        <div class="tab-content active" id="tab-overview">
+            <div class="grid-3" id="overviewCards"></div>
+            <div id="overviewConclusion"></div>
+        </div>
+
+        <!-- ===== ПЕРИОДЫ ===== -->
+        <div class="tab-content" id="tab-periods">
+            <div class="table-wrap"><div class="scroll-table" id="periodsTable"><div class="loading-placeholder"><div class="spinner"></div> Загрузка...</div></div></div>
+        </div>
+
+        <!-- ===== СИСТЕМЫ ===== -->
+        <div class="tab-content" id="tab-systems">
+            <div class="flex mb-12">
+                <select id="sysFilter" onchange="renderSystems()"><option value="all">Все системы</option></select>
+                <span class="text-muted" id="sysFilterLabel">—</span>
+            </div>
+            <div class="table-wrap"><div class="scroll-table" id="systemsTable"><div class="loading-placeholder"><div class="spinner"></div> Загрузка...</div></div></div>
+        </div>
+
+        <!-- ===== ДЕТАЛЬНО ===== -->
+        <div class="tab-content" id="tab-detail">
+            <div class="flex mb-12">
+                <select id="detailSysFilter" onchange="renderDetail()"><option value="all">Все системы</option></select>
+                <select id="detailPeriodFilter" onchange="renderDetail()"><option value="all">Все периоды</option></select>
+                <span class="text-muted" id="detailCount">—</span>
+            </div>
+            <div class="table-wrap"><div class="scroll-table" id="detailTable"><div class="loading-placeholder"><div class="spinner"></div> Загрузка...</div></div></div>
+        </div>
+
+        <!-- ===== ИСТОЧНИКИ ===== -->
+        <div class="tab-content" id="tab-sources">
+            <button class="btn btn-outline btn-sm" onclick="toggleSource()" id="sourceToggleBtn">📖 Показать источники</button>
+            <div class="source-panel" id="sourcePanel">
+                <div id="sourceContent"><div class="loading-placeholder"><div class="spinner"></div> Загрузка...</div></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ================================================================
+        // ДАННЫЕ (сжатые для быстрой загрузки)
+        // ================================================================
+
+        const PERIODS = {
+            daily: { label: 'Ежедневно', days: 1, order: 0 },
+            weekly: { label: 'Еженедельно', days: 7, order: 1 },
+            monthly: { label: 'Ежемесячно', days: 30, order: 2 },
+            quarterly: { label: 'Ежеквартально', days: 90, order: 3 },
+            semiannual: { label: 'Раз в 6 мес', days: 182, order: 4 },
+            yearly: { label: 'Ежегодно', days: 365, order: 5 },
+            '2years': { label: 'Раз в 2 года', days: 730, order: 6 },
+            '3years': { label: 'Раз в 3 года', days: 1095, order: 7 },
+            '5years': { label: 'Раз в 5 лет', days: 1826, order: 8 },
+            '6years': { label: 'Раз в 6 лет', days: 2191, order: 9 },
+            '10years': { label: 'Раз в 10 лет', days: 3652, order: 10 },
+            asneeded: { label: 'По необходимости', days: 0, order: 11 },
+            seasonal: { label: 'Сезонно', days: 0, order: 12 },
+            storage: { label: 'Хранение', days: 0, order: 13 },
+            commission: { label: 'Ввод в эксплуатацию', days: 0, order: 14 },
+        };
+
+        const SYSTEMS = {
+            vrk: 'ВРК',
+            motor: 'Двигатель',
+            skop: 'СКОП-1205',
+            energy: 'Накопитель',
+            trans: 'Трансформаторы',
+            pump: 'Насосы Calpeda',
+            heat: 'Теплообменники',
+            filter: 'Фильтры',
+            compressor: 'Компрессор',
+            apparel: 'Аппарель',
+            hydropump: 'Гидронасос',
+            shu: 'Шкафы управления',
+            acs: 'Система АОТ',
+            fire: 'Пожарная сигнализация',
+            radio: 'Радиостанции',
+            echo: 'Эхолот',
+            ais: 'АИС',
+            antenna: 'Антенны',
+            psu: 'Блоки питания',
+            heater: 'Электронагреватели',
+            water_heater: 'Водонагреватель',
+            fan: 'Вентиляторы',
+            drain: 'Дренажная помпа',
+            battery: 'Аккумуляторы',
+            rumbs: 'Система РУМБ',
+            glass: 'Стеклоочистители',
+            mooring: 'Швартовное',
+            door: 'Двери',
+        };
+
+        const SPECIALTIES = {
+            mechanic: 'Механик',
+            electric: 'Электрик',
+            service: 'Сервис',
+            diver: 'Водолаз',
+            crew: 'Экипаж',
+            other: 'Прочее',
+        };
+
+        // ================================================================
+        // КОМПАКТНЫЙ СПИСОК РАБОТ (все данные сжаты в массивы)
+        // ================================================================
+
+        // Формат: [система, название, период, нормо-часы, специальность]
+        const TASKS_DATA = [
+            ['vrk', 'Проверка уровня ТМ', 'daily', 0.2, 'crew'],
+            ['vrk', 'Визуальный контроль ВМ', 'daily', 0.1, 'crew'],
+            ['vrk', 'Контроль резьбовых соединений', 'daily', 0.2, 'crew'],
+            ['vrk', 'Проверка болтов крепления', 'daily', 0.2, 'crew'],
+            ['vrk', 'Проверка шумов и вибрации МР', 'daily', 0.2, 'crew'],
+            ['vrk', 'Визуальный осмотр МР', 'daily', 0.1, 'crew'],
+            ['vrk', 'Проверка крепежных болтов МР', 'daily', 0.2, 'crew'],
+            ['vrk', 'Осмотр уплотнителей на протечки', 'weekly', 0.3, 'crew'],
+            ['vrk', 'Осмотр теплообменника на протечки', 'weekly', 0.3, 'crew'],
+            ['vrk', 'Осмотр уплотнителей МР', 'weekly', 0.2, 'crew'],
+            ['vrk', 'Смена ТМ в контуре ВРК', 'semiannual', 1.5, 'service'],
+            ['vrk', 'Замена масляного фильтра', 'semiannual', 0.5, 'service'],
+            ['vrk', 'Осмотр муфты', 'semiannual', 0.5, 'service'],
+            ['vrk', 'Проверка винтовых соединений муфты', 'semiannual', 0.3, 'service'],
+            ['vrk', 'Очистка теплообменника', 'yearly', 1.0, 'service'],
+            ['vrk', 'Проверка выверки муфты', 'yearly', 0.5, 'service'],
+            ['vrk', 'Замена уплотнителей', '5years', 4.0, 'service'],
+            ['vrk', 'Проверка центровки ГЭД', '5years', 0.5, 'service'],
+            ['vrk', 'Замена анодов', '5years', 1.0, 'service'],
+            ['vrk', 'Капитальный ремонт ВМ', '10years', 8.0, 'service'],
+            ['motor', 'Внешний осмотр двигателя', 'monthly', 0.1, 'electric'],
+            ['motor', 'Проверка подключения кабелей', 'monthly', 0.1, 'electric'],
+            ['motor', 'Проверка работоспособности', 'monthly', 0.1, 'electric'],
+            ['motor', 'Проверка кнопок аварийного останова', 'quarterly', 0.1, 'electric'],
+            ['motor', 'Проверка индикаторов и звукоизлучателей', 'quarterly', 0.1, 'electric'],
+            ['motor', 'Замер сопротивления изоляции', 'yearly', 0.3, 'electric'],
+            ['motor', 'Протяжка клеммных соединений', 'yearly', 0.5, 'electric'],
+            ['skop', 'Внешний осмотр СЧ системы', 'monthly', 0.1, 'service'],
+            ['skop', 'Проверка подключения кабелей и заземления', 'monthly', 1.0, 'electric'],
+            ['skop', 'Проверка кнопок аварийного останова', 'monthly', 0.1, 'electric'],
+            ['skop', 'Обслуживание БУПС', 'monthly', 0.1, 'service'],
+            ['skop', 'Проверка работоспособности системы', 'monthly', 0.1, 'service'],
+            ['skop', 'Проверка индикаторов', 'monthly', 0.1, 'electric'],
+            ['skop', 'Протяжка клеммных соединений', 'yearly', 0.5, 'electric'],
+            ['energy', 'Внешний осмотр изделия', 'monthly', 0.1, 'crew'],
+            ['energy', 'Проверка индикации на МУ и МБ', 'monthly', 0.1, 'crew'],
+            ['energy', 'Проверка кабельных соединений', 'monthly', 0.1, 'crew'],
+            ['energy', 'Контроль уровня заряда', 'monthly', 0.1, 'crew'],
+            ['energy', 'Цикл разряд-заряд', 'semiannual', 1.5, 'service'],
+            ['energy', 'Проверка системы вентиляции', 'semiannual', 0.2, 'crew'],
+            ['trans', 'Внешний осмотр трансформатора', 'monthly', 0.1, 'electric'],
+            ['trans', 'Очистка трансформатора', 'monthly', 0.1, 'electric'],
+            ['trans', 'Контроль контактных соединений', 'monthly', 0.1, 'electric'],
+            ['trans', 'Подтяжка контактных соединений', 'semiannual', 0.1, 'electric'],
+            ['trans', 'Проверка сопротивления изоляции', 'semiannual', 0.1, 'electric'],
+            ['pump', 'Внешний осмотр насоса', 'monthly', 0.2, 'mechanic'],
+            ['pump', 'Проверка герметичности соединений', 'monthly', 0.2, 'mechanic'],
+            ['pump', 'Контроль рабочих параметров', 'monthly', 0.2, 'mechanic'],
+            ['pump', 'Проверка вибрации и шума', 'monthly', 0.2, 'mechanic'],
+            ['pump', 'Замер сопротивления изоляции', 'yearly', 0.5, 'electric'],
+            ['pump', 'Подтяжка электрических соединений', 'yearly', 0.3, 'electric'],
+            ['pump', 'Замена механического уплотнения', 'asneeded', 1.5, 'service'],
+            ['pump', 'Замена подшипников', 'asneeded', 2.0, 'service'],
+            ['heat', 'Контроль параметров по приборам', 'daily', 0.05, 'crew'],
+            ['heat', 'Визуальный осмотр на течи', 'daily', 0.05, 'crew'],
+            ['heat', 'Контроль узлов крепления', 'monthly', 0.2, 'crew'],
+            ['heat', 'Проверка размера стяжки', 'monthly', 0.3, 'crew'],
+            ['heat', 'Разборка и очистка пластин', 'yearly', 4.0, 'service'],
+            ['heat', 'Замена прокладок', 'yearly', 2.0, 'service'],
+            ['heat', 'Гидравлические испытания', 'yearly', 1.0, 'service'],
+            ['filter', 'Очистка фильтра', 'daily', 0.3, 'crew'],
+            ['filter', 'Проверка герметичности', 'daily', 0.1, 'crew'],
+            ['filter', 'Визуальный осмотр на протечки', 'weekly', 0.1, 'crew'],
+            ['filter', 'Очистка фильтра-сетки', 'monthly', 0.3, 'crew'],
+            ['filter', 'Замена фильтра', 'asneeded', 0.3, 'crew'],
+            ['compressor', 'Проверка герметичности', 'monthly', 0.1, 'mechanic'],
+            ['compressor', 'Очистка от пыли', 'monthly', 0.1, 'mechanic'],
+            ['compressor', 'Проверка затяжки болтов', 'monthly', 0.1, 'mechanic'],
+            ['compressor', 'Проверка реле давления', 'monthly', 0.2, 'mechanic'],
+            ['apparel', 'Осмотр рукавов высокого давления', 'weekly', 0.2, 'service'],
+            ['apparel', 'Проверка уровня масла', 'weekly', 0.2, 'service'],
+            ['apparel', 'Осмотр корпуса аппарели', 'weekly', 0.2, 'service'],
+            ['apparel', 'Проверка поднимания/опускания', 'weekly', 0.3, 'service'],
+            ['apparel', 'Осмотр электропроводки', 'monthly', 0.3, 'electric'],
+            ['apparel', 'Замена масла в гидросистеме', 'yearly', 2.0, 'service'],
+            ['hydropump', 'Визуальный осмотр насоса', 'monthly', 0.2, 'mechanic'],
+            ['hydropump', 'Контроль параметров работы', 'monthly', 0.2, 'mechanic'],
+            ['hydropump', 'Проверка уровня масла', 'monthly', 0.2, 'mechanic'],
+            ['hydropump', 'Полная ревизия насоса', '2years', 4.0, 'service'],
+            ['hydropump', 'Замена подшипников', '2years', 2.0, 'service'],
+            ['shu', 'Контроль внешнего вида кабелей', 'daily', 0.1, 'electric'],
+            ['shu', 'Наружный осмотр шкафа', 'monthly', 0.2, 'electric'],
+            ['shu', 'Проверка контактных соединений', 'monthly', 0.3, 'electric'],
+            ['shu', 'Проверка заземляющих проводников', 'monthly', 0.1, 'electric'],
+            ['shu', 'Очистка аппаратов от пыли', 'semiannual', 0.3, 'electric'],
+            ['acs', 'Контроль пусковых цепей', 'monthly', 0.3, 'electric'],
+            ['acs', 'Проверка световой и звуковой сигнализации', 'monthly', 0.3, 'electric'],
+            ['acs', 'Контроль кнопок ЭКСТРЕННЫЙ ПУСК', 'monthly', 0.2, 'electric'],
+            ['acs', 'Проверка напряжения и индикации', 'monthly', 0.1, 'electric'],
+            ['acs', 'Визуальный осмотр оборудования', 'monthly', 0.2, 'electric'],
+            ['acs', 'Подтяжка электрических соединений', 'yearly', 0.5, 'electric'],
+            ['fire', 'Внешний осмотр блоков СОП', 'monthly', 0.2, 'electric'],
+            ['fire', 'Очистка дисплея ПУ', 'monthly', 0.1, 'crew'],
+            ['fire', 'Проверка индикации на ПУ', 'monthly', 0.1, 'crew'],
+            ['fire', 'Измерение сопротивления изоляции', 'quarterly', 0.5, 'electric'],
+            ['fire', 'Проверка работоспособности системы', 'quarterly', 0.3, 'service'],
+            ['fire', 'Проверка состояния АБ ИБП', 'quarterly', 0.2, 'electric'],
+            ['fire', 'Чистка дымовых извещателей', 'seasonal', 0.4, 'service'],
+            ['radio', 'Внешний осмотр радиостанции', 'monthly', 0.1, 'crew'],
+            ['radio', 'Проверка крепления АКБ', 'monthly', 0.1, 'crew'],
+            ['radio', 'Проверка состояния АКБ', 'monthly', 0.1, 'crew'],
+            ['radio', 'Проверка работоспособности', 'monthly', 0.1, 'crew'],
+            ['radio', 'Проверка на передачу и приём', 'quarterly', 0.15, 'crew'],
+            ['radio', 'Проверка зарядного устройства', 'quarterly', 0.1, 'electric'],
+            ['radio', 'Проверка технического состояния', 'yearly', 2.0, 'service'],
+            ['echo', 'Визуальный осмотр блока', 'monthly', 0.1, 'electric'],
+            ['echo', 'Очистка экрана и корпуса', 'monthly', 0.1, 'crew'],
+            ['echo', 'Проверка питания и индикации', 'monthly', 0.1, 'electric'],
+            ['echo', 'Контроль глубины', 'monthly', 0.2, 'crew'],
+            ['echo', 'Замена батареи CR2032', 'yearly', 0.3, 'service'],
+            ['echo', 'Проверка излучателя', 'yearly', 0.5, 'service'],
+            ['ais', 'Осмотр разъёмов', 'monthly', 0.2, 'electric'],
+            ['ais', 'Осмотр кабелей', 'monthly', 0.2, 'electric'],
+            ['ais', 'Очистка клеммы заземления', 'monthly', 0.2, 'electric'],
+            ['ais', 'Удаление пыли', 'monthly', 0.2, 'crew'],
+            ['ais', 'Полная проверка соединений', 'yearly', 0.5, 'electric'],
+            ['ais', 'Проверка VHF-антенны', 'yearly', 0.5, 'electric'],
+            ['ais', 'Проверка GNSS-антенны', 'yearly', 0.5, 'electric'],
+            ['antenna', 'Внешний осмотр антенны', 'monthly', 0.1, 'electric'],
+            ['antenna', 'Очистка чехла', 'monthly', 0.2, 'crew'],
+            ['antenna', 'Проверка крепления кронштейна', 'quarterly', 0.2, 'electric'],
+            ['antenna', 'Осмотр кабеля и соединителя', 'quarterly', 0.2, 'electric'],
+            ['antenna', 'Детальный осмотр', 'yearly', 0.3, 'electric'],
+            ['antenna', 'Проверка КСВН', 'yearly', 0.5, 'service'],
+            ['psu', 'Проверка крепления БП', 'monthly', 0.1, 'electric'],
+            ['psu', 'Удаление пыли', 'monthly', 0.1, 'crew'],
+            ['psu', 'Осмотр кабелей', 'monthly', 0.1, 'electric'],
+            ['psu', 'Проверка выходного напряжения', 'yearly', 0.5, 'electric'],
+            ['psu', 'Проверка пульсаций', 'yearly', 0.5, 'service'],
+            ['heater', 'Визуальный осмотр', 'monthly', 0.1, 'mechanic'],
+            ['heater', 'Контроль ТЭНов', 'monthly', 0.1, 'mechanic'],
+            ['heater', 'Проверка электрических соединений', 'monthly', 0.2, 'electric'],
+            ['heater', 'Контроль температуры', 'monthly', 0.1, 'mechanic'],
+            ['heater', 'Разборка и чистка', 'yearly', 2.0, 'service'],
+            ['heater', 'Проверка сопротивления ТЭНов', 'yearly', 0.3, 'service'],
+            ['water_heater', 'Проверка клапана', 'monthly', 0.1, 'crew'],
+            ['water_heater', 'Визуальный осмотр', 'monthly', 0.1, 'crew'],
+            ['water_heater', 'Контроль температуры', 'monthly', 0.1, 'crew'],
+            ['water_heater', 'Полное ТО', 'yearly', 2.0, 'service'],
+            ['water_heater', 'Калибровка термостата', 'yearly', 0.1, 'service'],
+            ['fan', 'Визуальный осмотр', 'monthly', 0.1, 'mechanic'],
+            ['fan', 'Проверка рабочего тока', 'monthly', 0.1, 'electric'],
+            ['fan', 'Очистка рабочего колеса', 'quarterly', 0.3, 'mechanic'],
+            ['fan', 'Глубокая очистка', 'yearly', 0.8, 'service'],
+            ['fan', 'Проверка подшипников', 'yearly', 0.1, 'service'],
+            ['drain', 'Визуальный осмотр помпы', 'monthly', 0.1, 'mechanic'],
+            ['drain', 'Проверка герметичности', 'monthly', 0.1, 'mechanic'],
+            ['drain', 'Очистка фильтра-сетки', 'monthly', 0.2, 'mechanic'],
+            ['drain', 'Проверка работоспособности', 'monthly', 0.1, 'mechanic'],
+            ['drain', 'Разборка и чистка', 'yearly', 0.3, 'service'],
+            ['battery', 'Проверка напряжения АКБ', 'monthly', 0.2, 'electric'],
+            ['battery', 'Проверка крепления', 'monthly', 0.1, 'electric'],
+            ['rumbs', 'Внешний осмотр', 'monthly', 0.1, 'electric'],
+            ['rumbs', 'Проверка подключений', 'monthly', 0.1, 'electric'],
+            ['glass', 'Осмотр щёток', 'daily', 0.05, 'crew'],
+            ['glass', 'Очистка стёкол', 'monthly', 0.15, 'crew'],
+            ['glass', 'Функциональная проверка', 'monthly', 0.1, 'crew'],
+            ['glass', 'Замена щёток', 'yearly', 0.2, 'mechanic'],
+            ['glass', 'Проверка винтов', 'yearly', 0.3, 'mechanic'],
+            ['mooring', 'Визуальный осмотр', 'weekly', 0.2, 'crew'],
+            ['mooring', 'Проверка износа канатов', 'monthly', 0.3, 'crew'],
+            ['mooring', 'Замена каната', 'asneeded', 0.5, 'crew'],
+            ['door', 'Визуальный осмотр дверей', 'monthly', 0.1, 'mechanic'],
+            ['door', 'Проверка замков', 'monthly', 0.1, 'mechanic'],
+        ];
+
+        // ================================================================
+        // КОНФИГУРАЦИЯ
+        // ================================================================
+
+        const YEARS = 15;
+        const START_YEAR = 2027;
+        const DAYS_PER_YEAR = 365.25;
+        const TOTAL_DAYS = DAYS_PER_YEAR * YEARS;
+        const DAILY_CREW_PER_SHIP = 2;
+        const NIGHT_CREW = 5;
+        const NIGHT_SHIFTS = 2;
+        const SHIFT_HOURS = 8;
+
+        let shipsCount = 1;
+        let cachedResult = null;
+        let tasks = [];
+
+        // ================================================================
+        // ФУНКЦИИ
+        // ================================================================
+
+        function getPeriodLabel(p) { return PERIODS[p]?.label || p; }
+
+        function getSystemLabel(s) { return SYSTEMS[s] || s; }
+
+        function getSpecialtyLabel(s) { return SPECIALTIES[s] || s; }
+
+        function getSpecialtyClass(s) {
+            const map = { mechanic: 'specialty-mechanic', electric: 'specialty-electric', service: 'specialty-service',
+                diver: 'specialty-diver', crew: 'specialty-crew', other: 'specialty-other' };
+            return map[s] || 'specialty-other';
+        }
+
+        function calcCoefficient(period) {
+            const days = PERIODS[period]?.days || 0;
+            return days > 0 ? TOTAL_DAYS / days : 1;
+        }
+
+        function calculate() {
+            const result = [];
+            for (const [system, name, period, manHours, specialty] of TASKS_DATA) {
+                const coef = calcCoefficient(period);
+                const executions = Math.round(coef);
+                const totalHours = manHours * coef * shipsCount;
+                result.push({ system, name, period, manHours, specialty, coef, executions, totalHours });
+            }
+            cachedResult = result;
+            return result;
+        }
+
+        function getAvailableHours() {
+            const dayHours = DAILY_CREW_PER_SHIP * shipsCount * SHIFT_HOURS * TOTAL_DAYS;
+            const nightHours = NIGHT_CREW * SHIFT_HOURS * TOTAL_DAYS;
+            return { dayHours, nightHours, totalHours: dayHours + nightHours * NIGHT_SHIFTS };
+        }
+
+        function getData() {
+            if (!cachedResult) return calculate();
+            return cachedResult;
+        }
+
+        // ================================================================
+        // РЕНДЕРИНГ С ЛЕНИВОЙ ЗАГРУЗКОЙ
+        // ================================================================
+
+        function renderOverview() {
+            const data = getData();
+            const total = data.reduce((s, t) => s + t.totalHours, 0);
+            const daily = data.filter(t => t.period === 'daily').reduce((s, t) => s + t.totalHours, 0);
+            const weekly = data.filter(t => t.period === 'weekly').reduce((s, t) => s + t.totalHours, 0);
+            const monthly = data.filter(t => t.period === 'monthly').reduce((s, t) => s + t.totalHours, 0);
+            const other = total - daily - weekly - monthly;
+            const avail = getAvailableHours();
+
+            const nightLoad = weekly + monthly + other;
+            const dayPct = (daily / avail.dayHours) * 100;
+            const nightPct = (nightLoad / avail.nightHours) * 100;
+            const totalPct = (total / avail.totalHours) * 100;
+
+            const dayColor = dayPct > 90 ? 'red' : dayPct > 70 ? 'orange' : 'green';
+            const nightColor = nightPct > 90 ? 'red' : nightPct > 70 ? 'orange' : 'green';
+            const totalColor = totalPct > 90 ? 'red' : totalPct > 70 ? 'orange' : 'green';
+
+            const dayCrew = DAILY_CREW_PER_SHIP * shipsCount;
+
+            document.getElementById('overviewCards').innerHTML = `
+                <div class="stat-card ${dayColor}">
+                    <div class="num">${daily.toFixed(0)} / ${avail.dayHours.toFixed(0)}</div>
+                    <div class="lbl">Дневная смена (${dayCrew} чел.) — ${dayPct.toFixed(1)}%</div>
+                    <div class="progress-bar"><div class="fill fill-${dayColor}" style="width:${Math.min(dayPct, 100)}%"></div></div>
+                </div>
+                <div class="stat-card ${nightColor}">
+                    <div class="num">${nightLoad.toFixed(0)} / ${avail.nightHours.toFixed(0)}</div>
+                    <div class="lbl">Ночная смена (${NIGHT_CREW} чел.) — ${nightPct.toFixed(1)}%</div>
+                    <div class="progress-bar"><div class="fill fill-${nightColor}" style="width:${Math.min(nightPct, 100)}%"></div></div>
+                </div>
+                <div class="stat-card ${totalColor}">
+                    <div class="num">${total.toFixed(0)} / ${avail.totalHours.toFixed(0)}</div>
+                    <div class="lbl">Общая загрузка — ${totalPct.toFixed(1)}%</div>
+                    <div class="progress-bar"><div class="fill fill-${totalColor}" style="width:${Math.min(totalPct, 100)}%"></div></div>
+                </div>
+            `;
+
+            let conclusion = '';
+            if (totalPct > 90) {
+                conclusion = `<div class="danger-box"><strong>⚠️ КРИТИЧЕСКАЯ ПЕРЕГРУЗКА!</strong> Загрузка ${totalPct.toFixed(0)}%</div>`;
+            } else if (totalPct > 70) {
+                conclusion = `<div class="warning-box"><strong>⚡ ВЫСОКАЯ ЗАГРУЗКА</strong> — ${totalPct.toFixed(0)}%</div>`;
+            } else if (totalPct > 50) {
+                conclusion = `<div class="warning-box"><strong>📊 СРЕДНЯЯ ЗАГРУЗКА</strong> — ${totalPct.toFixed(0)}%</div>`;
+            } else {
+                conclusion = `<div class="success-box"><strong>✅ ДОСТАТОЧНО ПЕРСОНАЛА</strong> — загрузка ${totalPct.toFixed(0)}%</div>`;
+            }
+            document.getElementById('overviewConclusion').innerHTML = conclusion;
+
+            // Хедер
+            document.getElementById('totalTasks').textContent = data.length;
+            document.getElementById('totalHours').textContent = total.toFixed(0);
+            document.getElementById('avgLoad').textContent = totalPct.toFixed(0) + '%';
+        }
+
+        function renderPeriods() {
+            const data = getData();
+            const groups = {};
+            for (const t of data) {
+                if (!groups[t.period]) groups[t.period] = { count: 0, hours: 0, executions: 0 };
+                groups[t.period].count++;
+                groups[t.period].hours += t.totalHours;
+                groups[t.period].executions += t.executions;
+            }
+            const totalHours = data.reduce((s, t) => s + t.totalHours, 0);
+            const sorted = Object.keys(groups).sort((a, b) => (PERIODS[a]?.order || 99) - (PERIODS[b]?.order || 99));
+
+            let html =
+                `<table><thead><tr><th>Период</th><th>Работ</th><th>Выполнений</th><th>Нормо-часов</th><th>%</th></tr></thead><tbody>`;
+            for (const p of sorted) {
+                const g = groups[p];
+                const pct = totalHours > 0 ? (g.hours / totalHours * 100) : 0;
+                html += `<tr><td><strong>${getPeriodLabel(p)}</strong></td><td>${g.count}</td><td>${Math.round(g.executions)}</td><td>${g.hours.toFixed(1)}</td><td>${pct.toFixed(1)}%</td></tr>`;
+            }
+            html += '</tbody></table>';
+            document.getElementById('periodsTable').innerHTML = html;
+        }
+
+        function renderSystems() {
+            const data = getData();
+            const filter = document.getElementById('sysFilter').value;
+            const groups = {};
+            for (const t of data) {
+                if (filter !== 'all' && t.system !== filter) continue;
+                if (!groups[t.system]) groups[t.system] = { count: 0, hours: 0, executions: 0 };
+                groups[t.system].count++;
+                groups[t.system].hours += t.totalHours;
+                groups[t.system].executions += t.executions;
+            }
+            const totalHours = data.reduce((s, t) => s + t.totalHours, 0);
+            const sorted = Object.keys(groups).sort((a, b) => groups[b].hours - groups[a].hours);
+
+            let html =
+                `<table><thead><tr><th>Система</th><th>Работ</th><th>Выполнений</th><th>Нормо-часов</th><th>%</th></tr></thead><tbody>`;
+            for (const sys of sorted) {
+                const g = groups[sys];
+                const pct = totalHours > 0 ? (g.hours / totalHours * 100) : 0;
+                html +=
+                    `<tr><td><strong>${getSystemLabel(sys)}</strong></td><td>${g.count}</td><td>${Math.round(g.executions)}</td><td>${g.hours.toFixed(1)}</td><td>${pct.toFixed(1)}%</td></tr>`;
+            }
+            html += '</tbody></table>';
+            document.getElementById('systemsTable').innerHTML = html;
+
+            document.getElementById('sysFilterLabel').textContent =
+                filter === 'all' ? `Всего систем: ${Object.keys(groups).length}` : `Система: ${getSystemLabel(filter)}`;
+        }
+
+        function renderDetail() {
+            const data = getData();
+            const sysFilter = document.getElementById('detailSysFilter').value;
+            const periodFilter = document.getElementById('detailPeriodFilter').value;
+
+            let filtered = data;
+            if (sysFilter !== 'all') filtered = filtered.filter(t => t.system === sysFilter);
+            if (periodFilter !== 'all') filtered = filtered.filter(t => t.period === periodFilter);
+            filtered.sort((a, b) => b.totalHours - a.totalHours);
+
+            let html =
+                `<table><thead><tr><th>Система</th><th>Работа</th><th>Период</th><th>За 15 лет</th><th>Нормо-час</th><th>Всего ч</th><th>Спец.</th></tr></thead><tbody>`;
+            for (const t of filtered) {
+                const specClass = getSpecialtyClass(t.specialty);
+                html += `<tr>
+                    <td>${getSystemLabel(t.system)}</td>
+                    <td>${t.name}</td>
+                    <td>${getPeriodLabel(t.period)}</td>
+                    <td>${Math.round(t.executions)}</td>
+                    <td>${t.manHours.toFixed(1)}</td>
+                    <td>${t.totalHours.toFixed(1)}</td>
+                    <td><span class="specialty-tag ${specClass}">${getSpecialtyLabel(t.specialty)}</span></td>
+                </tr>`;
+            }
+            html += '</tbody></table>';
+            document.getElementById('detailTable').innerHTML = html;
+            document.getElementById('detailCount').textContent = `Показано: ${filtered.length} работ`;
+        }
+
+        function renderSources() {
+            let html =
+                `<div class="info-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">`;
+            const avail = getAvailableHours();
+            const dayCrew = DAILY_CREW_PER_SHIP * shipsCount;
+            html += `
+                <div class="info-item"><div class="label">Дневная смена</div><div class="value">${dayCrew} чел.</div><div class="formula">${dayCrew} × 8 ч × ${Math.round(TOTAL_DAYS)} дней = ${avail.dayHours.toFixed(0)} ч</div></div>
+                <div class="info-item"><div class="label">Ночная смена</div><div class="value">${NIGHT_CREW} чел.</div><div class="formula">${NIGHT_CREW} × 8 ч × ${Math.round(TOTAL_DAYS)} дней = ${avail.nightHours.toFixed(0)} ч (одна смена)</div></div>
+                <div class="info-item"><div class="label">Всего доступно</div><div class="value">${avail.totalHours.toFixed(0)} ч</div><div class="formula">${avail.dayHours.toFixed(0)} + ${(avail.nightHours * NIGHT_SHIFTS).toFixed(0)} = ${avail.totalHours.toFixed(0)} ч</div></div>
+                <div class="info-item"><div class="label">Период</div><div class="value">${START_YEAR}–${START_YEAR+YEARS-1}</div><div class="formula">${YEARS} лет × 365.25 = ${Math.round(TOTAL_DAYS)} дней</div></div>
+            `;
+            html += `</div>`;
+
+            // Таблица коэффициентов
+            html +=
+                `<h4 style="margin:12px 0 6px;">📋 Коэффициенты пересчёта</h4><div class="table-wrap"><table class="period-coef-table"><thead><tr><th>Период</th><th>Дней</th><th>Выполнений</th></tr></thead><tbody>`;
+            for (const [p, info] of Object.entries(PERIODS)) {
+                const coef = info.days > 0 ? TOTAL_DAYS / info.days : 1;
+                html +=
+                    `<tr><td>${info.label}</td><td>${info.days || '—'}</td><td>${Math.round(coef)}</td></tr>`;
+            }
+            html += `</tbody></table></div>`;
+
+            // Список работ (сокращённый)
+            html +=
+                `<h4 style="margin:12px 0 6px;">📄 Исходные данные (${TASKS_DATA.length} работ)</h4><div class="table-wrap"><div class="scroll-table" style="max-height:200px;"><table><thead><tr><th>Система</th><th>Работа</th><th>Период</th><th>Нормо-час</th></tr></thead><tbody>`;
+            for (const [system, name, period, manHours] of TASKS_DATA.slice(0, 30)) {
+                html +=
+                    `<tr><td>${getSystemLabel(system)}</td><td>${name}</td><td>${getPeriodLabel(period)}</td><td>${manHours.toFixed(1)}</td></tr>`;
+            }
+            if (TASKS_DATA.length > 30) {
+                html +=
+                    `<tr><td colspan="4" style="text-align:center;color:#94a3b8;">... и ещё ${TASKS_DATA.length - 30} работ</td></tr>`;
+            }
+            html += `</tbody></table></div></div>`;
+
+            document.getElementById('sourceContent').innerHTML = html;
+        }
+
+        // ================================================================
+        // УПРАВЛЕНИЕ СУДАМИ
+        // ================================================================
+
+        function changeShips(delta) {
+            const newVal = shipsCount + delta;
+            if (newVal < 1) return;
+            shipsCount = newVal;
+            cachedResult = null;
+            document.getElementById('shipsCountDisplay').textContent = shipsCount;
+            document.getElementById('shipsDecBtn').disabled = shipsCount <= 1;
+            document.getElementById('shipsInfo').textContent =
+                `День: ${DAILY_CREW_PER_SHIP * shipsCount} чел. • Ночь: ${NIGHT_CREW} чел. × ${NIGHT_SHIFTS} смены`;
+            renderAll();
+        }
+
+        // ================================================================
+        // ВКЛАДКИ (ленивая загрузка)
+        // ================================================================
+
+        let renderedTabs = {};
+
+        function setupTabs() {
+            const buttons = document.querySelectorAll('.tabs button');
+            const contents = {
+                'tab-overview': document.getElementById('tab-overview'),
+                'tab-periods': document.getElementById('tab-periods'),
+                'tab-systems': document.getElementById('tab-systems'),
+                'tab-detail': document.getElementById('tab-detail'),
+                'tab-sources': document.getElementById('tab-sources'),
+            };
+
+            for (const btn of buttons) {
+                btn.addEventListener('click', function() {
+                    const tabId = this.dataset.tab;
+                    buttons.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    for (const [id, el] of Object.entries(contents)) {
+                        el.classList.toggle('active', id === tabId);
+                    }
+                    // Ленивая загрузка
+                    if (!renderedTabs[tabId]) {
+                        renderedTabs[tabId] = true;
+                        switch (tabId) {
+                            case 'tab-overview':
+                                renderOverview();
+                                break;
+                            case 'tab-periods':
+                                renderPeriods();
+                                break;
+                            case 'tab-systems':
+                                renderSystems();
+                                break;
+                            case 'tab-detail':
+                                renderDetail();
+                                break;
+                            case 'tab-sources':
+                                renderSources();
+                                break;
+                        }
+                    }
+                });
+            }
+        }
+
+        // ================================================================
+        // ИСТОЧНИКИ (переключатель)
+        // ================================================================
+
+        let sourceOpen = false;
+
+        function toggleSource() {
+            sourceOpen = !sourceOpen;
+            document.getElementById('sourcePanel').classList.toggle('open', sourceOpen);
+            document.getElementById('sourceToggleBtn').textContent = sourceOpen ? '📕 Скрыть источники' :
+            '📖 Показать источники';
+            if (sourceOpen && !renderedTabs['tab-sources']) {
+                renderedTabs['tab-sources'] = true;
+                renderSources();
+            }
+        }
+
+        // ================================================================
+        // ФИЛЬТРЫ
+        // ================================================================
+
+        function populateFilters() {
+            const sysSet = new Set();
+            const periodSet = new Set();
+            for (const [system, , period] of TASKS_DATA) {
+                sysSet.add(system);
+                periodSet.add(period);
+            }
+
+            const sysSelects = ['sysFilter', 'detailSysFilter'];
+            for (const id of sysSelects) {
+                const sel = document.getElementById(id);
+                sel.innerHTML = '<option value="all">Все системы</option>';
+                for (const s of sysSet) {
+                    const opt = document.createElement('option');
+                    opt.value = s;
+                    opt.textContent = getSystemLabel(s);
+                    sel.appendChild(opt);
+                }
+            }
+
+            const periodSel = document.getElementById('detailPeriodFilter');
+            periodSel.innerHTML = '<option value="all">Все периоды</option>';
+            const sorted = Array.from(periodSet).sort((a, b) => (PERIODS[a]?.order || 99) - (PERIODS[b]?.order || 99));
+            for (const p of sorted) {
+                const opt = document.createElement('option');
+                opt.value = p;
+                opt.textContent = getPeriodLabel(p);
+                periodSel.appendChild(opt);
+            }
+        }
+
+        // ================================================================
+        // ОБНОВЛЕНИЕ ВСЕГО
+        // ================================================================
+
+        function renderAll() {
+            // Сброс кэша рендера
+            renderedTabs = {};
+            cachedResult = null;
+            getData();
+
+            // Рендерим только активную вкладку
+            const activeTab = document.querySelector('.tabs button.active');
+            if (activeTab) {
+                const tabId = activeTab.dataset.tab;
+                renderedTabs[tabId] = true;
+                switch (tabId) {
+                    case 'tab-overview':
+                        renderOverview();
+                        break;
+                    case 'tab-periods':
+                        renderPeriods();
+                        break;
+                    case 'tab-systems':
+                        renderSystems();
+                        break;
+                    case 'tab-detail':
+                        renderDetail();
+                        break;
+                    case 'tab-sources':
+                        renderSources();
+                        break;
+                }
+            }
+            // Обновляем хедер всегда
+            const data = getData();
+            const total = data.reduce((s, t) => s + t.totalHours, 0);
+            const avail = getAvailableHours();
+            document.getElementById('totalTasks').textContent = data.length;
+            document.getElementById('totalHours').textContent = total.toFixed(0);
+            document.getElementById('avgLoad').textContent = ((total / avail.totalHours) * 100).toFixed(0) + '%';
+        }
+
+        // ================================================================
+        // INIT
+        // ================================================================
+
+        document.addEventListener('DOMContentLoaded', function() {
+            populateFilters();
+            setupTabs();
+
+            // Первая загрузка — только обзор
+            renderedTabs['tab-overview'] = true;
+            renderOverview();
+
+            // Предзагрузка остальных в фоне (не блокируя интерфейс)
+            setTimeout(() => {
+                if (!renderedTabs['tab-periods']) renderPeriods();
+                if (!renderedTabs['tab-systems']) renderSystems();
+                if (!renderedTabs['tab-detail']) renderDetail();
+                if (!renderedTabs['tab-sources']) renderSources();
+            }, 200);
+
+            console.log('✅ Оптимизированный калькулятор загружен');
+            console.log(`📊 Всего работ: ${TASKS_DATA.length}`);
+            const data = getData();
+            const total = data.reduce((s, t) => s + t.totalHours, 0);
+            console.log(`⏱️ Всего нормо-часов: ${total.toFixed(0)}`);
+        });
+    </script>
+</body>
+</html>
